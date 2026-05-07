@@ -1,0 +1,612 @@
+Playwright Demo
+
+- install nodejs
+- install VSCode
+- create a folder: "playwright-test"
+- open the folder in VSCode
+- use this command to install playwright: "npm i -D playwright", "npm init playwright@latest"
+- to check playwright version installed: "npm playwright -v"
+- to check playwright command options: "npx playwright --help"
+- create a file: "hello-playwright.js"
+- use this command to be able to install browsers for testing: "npx playwright install"
+- use this command to launch wikipedia.org: "npx playwright codegen wikipedia.org"
+- this will open a test Wikipedia page and playwright inspector, any action performed on the Wikipedia page will generate a corresponding code in the playwright inspector
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Running Test
+
+- npx playwright test              	          # runs all tests on all browsers in headless mode
+- npx playwright show-report       	          # open the html report generated after running the tests
+- npx playwright test --workers 3  	          # runs with 3 workers in parallel
+- npx playwright test one.spec.js  	          # runs a specific test file. NOTE: Go inside the folder where tests are present and then run the tests
+- npx playwright test one.spec.js two.spec.js     # runs the files specified
+- npx playwright test one two                     # runs files that have one or two in the file name
+- npx playwright test -g "check title"            # runs test with the title
+- npx playwright test --project=chromium          # runs on specific browser
+- npx playwright test --headed                    # runs tests in headed mode
+- npx playwright test --debug                     # debug tests
+- npx playwright test example.spec.js --debug     # debug specific test file
+- npx playwright test example.spec.js:21 --debug  # debug starting from specific line where test(.. starts
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+How to write tests
+
+Step 1: Create a new file under test folder
+
+Step 2: Add module 'playwright/test'
+	import { test, expect } from '@playwright/test'
+# Playwright Test provides a test function to declare tests and expect function to write assertions
+
+Step 3: Create a test block - test(title, testFunction)
+	test('My first test', async ({page}) => {
+    		await pageXOffset.goto('https://google.com')
+    		await expect(page).toHaveTitle('Google')
+	})
+# The keyword async before a function makes the function return a promise
+# The keyword await before a function makes the function wait for a  promise
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+How to record test - Test Generator
+
+# Playwright comes with a tool - Codegen also called Test Generator
+# Can be used to record test and generate test scripts
+# It opens 2 windows:
+  1. A browser window to interact with the website
+  2. Playwright Inspector window to record test
+
+Step 1: Open terminal and run codegen -- npx playwright codegen / npx playwright codegen google.com
+
+Step 2: Check 2 windows open - Browser and Playwright Inspector
+
+Step 3: Record your steps and check the test scripts getting created
+
+Step 4: Save the recorded script in a test file | Run and check
+
+- npx playwright codegen --browser firefox (default: chromium)    # Record on a specific browser
+- npx playwright codegen --target javascript -o record_example.js # Record and save to a file
+- npx playwright codegen --viewport-size=800,600                  # Set viewport - screen resolution (size)
+- npx playwright codegen --device="iPhone 11"                     # Emulate devices
+- npx playwright codegen --color-scheme=dark			  # Emulate color scheme (if available on the site)
+- npx playwright codegen --help                                   # See all options
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+What is Trace Viewer
+
+# GUI tool that helps viewing the executed test along with snapshots, timeline and other details (traces)
+
+
+How to use Trace Viewer
+
+Step 1: Open config file and set trace: 'on-first-retry'
+	It means: Collect trace when retrying the failed test for the 1st time only
+
+Step 2: Save and Run a test to fail
+
+Step 3: Check trace.zip file created under test-results folder
+
+Step 4: View trace - npx playwright show-trace trace.zip
+
+
+Trace Viewer Options
+
+- 'on-first-retry'    # Record a trace only when retrying a test for the first time
+- 'off'               # Do not record a trace
+- 'on'		      # Record a trace for each test (not recommended as it's performance heavy)
+- 'retain-on-failure' # Record a trace for each test, but remove it from successful test runs
+
+# To set trace on from command npx playwright test --trace on
+
+
+Different ways to view trace
+
+# Using command - npx playwright show-trace trace.zip
+# Using HTML Report
+# Using utility - https://trace.playwright.dev/
+
+
+How to set Tracing programmatically
+
+test.only('test demo', async({page, context})) => {
+  await context.tracing.start({snapshots: true, screenshots: true})
+  // test code
+  await context.tracing.stop({path: 'test-trace.zip'});
+});
+
+*********
+
+/** @type {import('@playwright/test').BrowserContext} */
+let context;
+
+/** @type {import('@playwright/test').Page} */
+let page;
+
+test.beforeAll(async ({browser}) => {
+  context = await browser.newContext();
+  await (await context).tracing.start(
+    {
+      screenshots: true, 
+      snapshots: true
+    });
+
+    page = await context.newPage();
+
+})
+
+test.afterAll(async () => {
+  await context.tracing.stop({ path: 'test2_trace.zip' });
+
+})
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+What are Selectors and Locators?
+
+# Selectors are the strings/ properties of the web objects
+# Selectors are used to create Locators
+# Selectors e.g. CSS, Class, Name, ID, Text, XPath ....
+# To find an object or element we use the syntax page.locator(selector[, options])
+# Locator is a class in Playwright library
+
+How to find web objects with Playwright?
+
+// using any object property
+await page.click('id=user-name')
+
+await page.locator('id=user-name').fill('Edison')
+await page.locator('[id="user-name"]').fill('Einstein')
+
+// using CSS Selector
+// #login-button
+await page.locator('#login-button').click()
+
+// using XPath
+await page.locator('xpath=//input[@name="password"]').fill('Faraday')
+await page.locator('//input[@name="password"]').fill('Ramanujan')
+
+// using Text
+await page.locator('text=LOGIN').click()
+await page.locator('input:has-text("LOGIN")').click()
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+test('Demo Login Test 1', async ({page}) => {
+
+    await page.goto('https://demo.applitools.com/')
+    // await page.pause()
+
+    await page.getByRole('textbox', { name: 'Enter your username' }).fill('Sneha')
+    await page.getByRole('textbox', { name: 'Enter your password' }).fill('1234')
+
+    await page.getByRole('link', { name: 'Sign in' }).click()
+    // await page.getByRole('link', { name: 'ACME' }).isVisible();
+
+    // await expect(page.getByRole('link', { name: 'Sign in' })).toHaveCount(1)
+})
+
+test('Demo Login Test 2', async ({page}) => {
+
+    await page.goto('https://opensource-demo.orangehrmlive.com/web/index.php/auth/login')
+    // await page.pause()
+
+    await page.getByRole('textbox', { name: 'Username' }).click();
+    await page.getByRole('textbox', { name: 'Username' }).fill('Admin');
+    await page.getByRole('textbox', { name: 'Password' }).click();
+    await page.getByRole('textbox', { name: 'Password' }).fill('admin123');
+    await page.getByRole('button', { name: 'Login' }).click();
+    await page.getByRole('banner').getByText('Marshall Zulauf').click();
+    await page.getByRole('menuitem', { name: 'Logout' }).click();
+
+})
+
+test.only('Demo Login Test 3', async ({page}) => {
+
+    await page.pause();
+
+    await page.goto('https://admin-demo.nopcommerce.com/login?returnUrl=%2Fadmin%2F');
+    await page.getByRole('textbox', { name: 'Email:' }).dblclick();
+    await page.getByRole('textbox', { name: 'Email:' }).click();
+    await page.getByRole('textbox', { name: 'Email:' }).dblclick();
+    await page.getByRole('textbox', { name: 'Email:' }).press('ControlOrMeta+a');
+    await page.getByRole('textbox', { name: 'Email:' }).press('ControlOrMeta+x');
+    await page.getByRole('textbox', { name: 'Email:' }).fill('admin@yourstore.com');
+    await page.getByRole('textbox', { name: 'Password:' }).click();
+    await page.getByRole('textbox', { name: 'Password:' }).fill('Admin');
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await page.locator('iframe[src="https://challenges.cloudflare.com/cdn-cgi/challenge-platform/h/g/turnstile/f/ov2/av0/rch/nu9iz/0x4AAAAAAADnPIDROrmt1Wwj/light/fbE/new/normal?lang=auto"]').contentFrame().locator('body').click();
+    await page.goto('https://admin-demo.nopcommerce.com/login?returnurl=%2Fadmin%2F');
+
+})
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+What are Assertions
+
+# Checks or Verification  --  Check actual = expected
+
+
+Assertions in Playwright
+
+# Playwright Test uses expect library for test assertions
+
+
+How to add Assertions
+
+- Present/ Not Present
+	await expect(page.getByRole('heading', { name: 'The Kitchen' })).toHaveCount(1)
+	await page.$('text=The Kitchen')
+
+- Visible/ Hidden
+	await expect(page.getByRole('heading', { name: 'The Kitchen' })).toBeVisible()
+    	await expect(page.getByRole('heading', { name: 'The Kitchen' })).toBeHidden()
+
+- Enables/ Disabled
+	await expect(page.getByRole('heading', { name: 'The Kitchen' })).toBeEnabled()
+    	await expect(page.getByRole('heading', { name: 'The Kitchen' })).toBeDisabled()
+
+- Text matches value or not
+	await expect(page.getByRole('heading', { name: 'The Kitchen' })).toHaveText('The Kitchen')
+    	await expect(page.getByRole('heading', { name: 'The Kitchen' })).not.toHaveText('The Kitchen')
+
+- Element attribute
+	await expect(page.getByRole('heading', { name: 'The Kitchen' })).toHaveAttribute('class', /.*css-dpmy2a/)
+    	await expect(page.getByRole('heading', { name: 'The Kitchen' })).toHaveClass(/.*css-dpmy2a/)
+
+- URL
+	await expect(page).toHaveURL('https://kitchen.applitools.com/')
+    	await expect(page).toHaveURL(/kitchen.applitools.com/)
+
+- Title
+	await expect(page).toHaveTitle(/.*Kitchen/)
+
+- Page matches screenshot
+	await expect(page).toHaveScreenshot()
+
+- Soft Assertions
+	await expect.soft(page.getByRole('heading', { name: 'The Kitchen' })).toBeDisabled()
+	// do not terminate test execution mark the test as failed
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+How to run tests in Slow Motion | How to Record Video
+
+Step 1: Open config file and add option for slow motion and video recording
+	const config = {
+	   use: {
+		video: 'on',
+		launchOptions:{
+		   slowMo: 1000
+		}
+	# slowMo slows down Playwright operations by the specified milliseconds
+	# video:
+	  - 'on': Record video for each test
+	  - 'off': Do not record video
+	  - 'retain-on-failure': record for each test, but remove from successful test runs
+	  - 'on-first-retry': record only when retrying a test for the first time
+
+Step 2: Save and Run
+
+Step 3: Check Video files will appear in the test-results folder
+
+Note: slowMo is a field in Class BrowserType.LaunchOptions
+
+
+How to set video recording and slow motion from test (Browser Context)
+
+# In Playwright we can create isolated incognito browser sessions using browser context
+
+// Launch browser
+const browser = await chromium.launch();
+
+// Create a new ingognito browser context
+const context = await browser.newContext();
+
+// Create a new page inside context
+const page = await context.newPage();
+
+await page.goto('')
+
+// Dispose context once it's no longer needed
+await context.close();
+
+
+Step 1: Create a test and create browser context
+
+Step 2: Add options for Slow Motion in browser
+
+Step 3: Add options for video recording in new context
+
+Step 4: Close context
+
+// Launch browser
+const browser = await chromium.launch({
+    slowMo: 500,
+    headless: false
+});
+
+// Create a new ingognito browser context
+const context = await browser.newContext({
+    recordVideo: {
+        dir: 'videos/',
+        size: {width: 800, height: 600}
+    }
+});
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Organizing and Grouping Tests
+
+Hooks:
+
+- beforeAll: executed before all tests in the file
+	     when used inside describe, runs before all tests in the group
+	     if multiple beforeAll is used, they will run in the order of their registration
+
+- beforeEach: executed before each tests in the file
+	      when used inside describe, runs before each tests in the group
+	      if multiple beforeEach is used, they will run in the order of their registration
+
+- afterAll: executed after all tests in the file
+	    when used inside describe, runs after all tests in the group
+	    if multiple afterAll is used, they will run in the order of their registration
+
+- afterEach: executed after each tests in the file
+	     when used inside describe, runs after each tests in the group
+	     if multiple afterEach is used, they will run in the order of their registration
+
+Groups:
+
+- describe
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Annotations:
+
+- skip
+	test.skip('Test One', async({page}) => {
+	     // This test will be skipped
+	})
+
+- fail
+	test('not ready yet', async({page}) => {
+    	     // will mark test as failure, will show error if the test does not fail
+    	     // page.goto('https://www.saucedemo.com/')
+    	     test.fail();
+	})
+
+- fixme
+	test.fixme('test to be fixed', async({page}) => {
+    	     //test will be abprted
+	})
+
+- slow
+	test.only('slow test', async({page}) => {
+    	     // marks the test as slow and triples the test timeout
+    	     test.slow();
+	})
+
+- Only
+	test.only('slow test', async({page}) => {
+    	     // run only focused tests in the entire project
+    	     test.slow();
+	})
+
+- skip conditionally: skips the test based on some condition
+
+
+Tags:
+
+# You can tag your tests with tags like, @smoke, @sanity, @fast, @slow, and only run the tests that have the certain tag
+
+test('Test login page @smoke', async({page}) => {
+
+})
+
+npx playwright test tests/AnnotationsAndTags.spec.js --project=chromium --grep "@smoke" 
+
+// to skip tests having particular tags
+npx playwright test tests/AnnotationsAndTags.spec.js --project=chromium --grep-invert "@smoke"
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Playwright Page Object Model Project
+
+Step 1: Create a new folder and open in IDE or Editor (like VD Code)
+
+Step 2: Initialize a new Node.js project by running npm init -y to create a package.json file
+
+Step 3: Install and Setup Playwright by running npm init playwright@latest
+
+Step 4: Create a demo login test, can use Test Generator to record npx playwright codegen
+
+Step 5: Run tests and check results - npx playwright test and npx playwright show-report
+
+Step 6: Create new folder "pages" in your project, this will contain all page objects
+
+Step 7: Create a new file and class for each page e.g. login.js and LoginPage
+
+Step 8: In the class create element locators and action methods for login page
+
+Step 9: In test file, import the page class, create instance of it & use methods from LoginPage class
+
+Step 10: Run the test npx playwright test and check results
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+API Testing with Playwright - Project Setup
+
+Step 1: Create a new folder for API Testing Project
+
+Step 2: Open the folder in VS Code
+
+Step 3: Open terminal on the location of the folder and run command
+	npm init playwright@latest
+
+Step 4: Check if demo tests are running fine using command
+	npx playwright test
+	npx playwright test --ui
+	npx playwright show-report
+
+Step 5: Create a new file for API Tests (api_tests.spec.js)
+
+
+How to run a GET API Request
+
+Step 1: Add imports
+	import {test, expect} from '@playwright/test'
+
+Step 2: Create a test using request context
+	test('API GET Request', async({request}) => {})
+
+Step 3: Send a GET request and store response in a varible
+	const response = await request.get('https://jsonplaceholder.typicode.com/posts')
+
+Step 4: Verify the status code of the response is 200
+	expect(response.status()).toBe(200)
+
+Step 5: Check response contains some text
+	const text = await response.text();
+    	expect(text).toContain('qui est esse')
+
+Step 6: Write response on the console
+	console.log(await response.json());
+
+Step 7: Run and check results
+
+
+How to run a POST API Request
+
+Step 1: Add imports
+	import {test, expect} from '@playwright/test'
+
+Step 2: Create a test using request context
+	test('API POST Request', async({request}) => {})
+
+Step 3: Send a POST request along with request body and store response in a variable
+	const response = await request.post('https://jsonplaceholder.typicode.com/posts', {
+        data: {
+            'title': 'foo',
+            'body': 'bar',
+            'userId': 1
+        }
+
+Step 4: Verify response status code 201
+	expect(response.status()).toBe(201)
+
+Step 5: Check response contains some text
+	const text = await response.text();
+    	expect(text).toContain('foo')
+
+Step 6: Write response on the console
+	console.log(await response.json());
+
+Step 7: Run and check results
+
+
+How to run a PUT API Request
+
+test('API PUT Request', async ({ request }) => {
+
+    const response = await request.put('https://jsonplaceholder.typicode.com/posts/1', {
+        data: {
+            'title': 'foo',
+            'body': 'bar',
+            'userId': 1
+        }
+    })
+
+    expect(response.status()).toBe(200)
+
+    const text = await response.text();
+    expect(text).toContain('foo')
+
+    console.log(await response.json());
+
+})
+
+
+How to run a DELETE API Request
+
+test('API DELETE Request', async ({ request }) => {
+
+    const response = await request.delete('https://jsonplaceholder.typicode.com/posts')
+    expect(response.status()).toBe(204)
+})
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Step 1: Create a new project folder and open in VS Code
+
+Step 2: On terminal goto project folder location and check if node is installed
+	node -v or npm -v
+
+Step 3: Create project folder and initialize npm
+	npm init -y
+
+Step 4: Install Playwright Test (dev dependency) and install browsers
+	npm init playwright@latest
+	npx playwright install (optional)
+
+Step 5: Create tests/todo.spec.js
+
+Step 6: Add test script
+	Can also record: npx playwright codegen https://todomvc.com/examples/react/dist/
+
+	Perform the following actions:
+	1. Add a new To-DO: "Buy Groceries"
+	2. Add another: "Pay Bills"
+	3. Mark "Buy Groceries" as complete
+	4 Delete "Pay Bills"
+	5. Add assertions for visibility and text
+
+Step 7: Run all tests (headless)
+	npx playwright test '@sanity'
+
+Step 8: Run in headed mode
+	npx playwright --headed --project=chromium
+	Try npx playwright test --ui
+
+Step 9: Generate and view HTML report
+	npx playwright test --headed --reporter=html
+	npx playwright show-report
+
+Step 10: Add Assertion
+	await expect(page.locator('.todo-list li')).toHaveCount(2);
+
+Step 11: In config file add scripts to take screenshot on failure
+
+##############
+
+import { test, expect } from '@playwright/test'
+
+test('todo: add, complete, delete', async ({page}) => {
+	await page.goto('https://todomvc.com/examples/react/dist/')
+	const newTodo = page.locator('.new-todo');
+	await newTodo.fill('Buy Milk');
+	await newTodo.press('Enter');
+	await newTodo.fill('Write test');
+	await newTodo.press('Enter');
+})
+
+##############
+	
+await newTodo.press('Enter');
+
+const items = page.locator('.todo-list li');
+await expect(items).toHaveCount(3);
+
+// mark secod item complete
+await items.nth(1).locator('.toggle').check();
+await expect(page.locator('.todo-list li.completed')).toHaveCount(1);
+
+// delete third item (hover + click destroy)
+await items.nth(2).hover();
+await items.nth(2).locator('.destroy').click({force: true});
+await expect(items).toHaveCount(2);
+
+await page.screenshot({path: 'todo-final.png'});
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
